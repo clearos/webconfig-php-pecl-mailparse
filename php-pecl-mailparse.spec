@@ -1,11 +1,9 @@
-# $Id: php-pecl-mailparse.spec,v 1.2 2004/11/09 02:49:13 cvsextras Exp $
-
-%define php_extdir %(php-config --extension-dir)
+%define php_extdir %(php-config --extension-dir || echo /usr/lib/php4)
 
 Summary: PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
 Version: 2.0b
-Release: 4.1.fc2.fr
+Release: 5
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
@@ -61,6 +59,9 @@ EOF
 
 
 %changelog
+* Thu Jan 13 2005 Matthias Saou <http://freshrpms.net/> 2.0b-5
+- Bump release.
+
 * Tue Jul 27 2004 Matthias Saou <http://freshrpms.net/> 2.0b-4
 - Update included mbfl source to 4.3.8 as the current 4.3.4 doesn't work
   anymore.
