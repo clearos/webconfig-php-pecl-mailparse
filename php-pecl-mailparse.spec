@@ -1,16 +1,16 @@
-# $Id: php-pecl-mailparse.spec,v 1.1 2004/11/09 02:49:07 cvsextras Exp $
+# $Id: php-pecl-mailparse.spec,v 1.2 2004/11/09 02:49:13 cvsextras Exp $
 
 %define php_extdir %(php-config --extension-dir)
 
-Summary: RECL package for parsing and working with email messages
+Summary: PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
 Version: 2.0b
-Release: 2.1.fc1.fr
+Release: 4.1.fc2.fr
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
 Source0: http://pecl.php.net/get/mailparse-%{version}.tgz
-Source1: mbfl-4.3.4.tar.gz
+Source1: mbfl-4.3.8.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: php
 BuildRequires: php, php-devel
@@ -31,7 +31,7 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 %{__mv} mbfl-* ext/mbstring/libmbfl/mbfl
 phpize
 %configure
-%{__make}
+%{__make} %{?_smp_mflags}
 
 
 %install
@@ -43,6 +43,9 @@ phpize
 %{__cat} > %{buildroot}%{_sysconfdir}/php.d/mailparse.ini << 'EOF'
 ; Enable mailparse extension module
 extension=mailparse.so
+
+; Set the default charset
+;mailparse.def_charset = us-ascii
 EOF
 
 
@@ -58,6 +61,15 @@ EOF
 
 
 %changelog
+* Tue Jul 27 2004 Matthias Saou <http://freshrpms.net/> 2.0b-4
+- Update included mbfl source to 4.3.8 as the current 4.3.4 doesn't work
+  anymore.
+
+* Fri May 21 2004 Matthias Saou <http://freshrpms.net/> 2.0b-3
+- Rebuild for Fedora Core 2.
+- No need for a strict dependency on this package, it works fine with
+  php 4.3.6 when compiled against 4.3.4.
+
 * Fri May  7 2004 Matthias Saou <http://freshrpms.net/> 2.0b-2
 - Added php.d entry to auto-load the module with recent php packages.
 - Added more macros to the spec file.
