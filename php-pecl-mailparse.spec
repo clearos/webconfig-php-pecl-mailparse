@@ -1,9 +1,9 @@
-%define php_extdir %(php-config --extension-dir || echo /usr/lib/php4)
+%define php_extdir %(php-config --extension-dir || echo %{_libdir}/php4)
 
 Summary: PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
-Version: 2.0b
-Release: 5
+Version: 2.1
+Release: 1
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
@@ -59,6 +59,9 @@ EOF
 
 
 %changelog
+* Wed Feb 16 2005 Matthias Saou <http://freshrpms.net/> 2.1-1
+- Update to 2.1.
+
 * Thu Jan 13 2005 Matthias Saou <http://freshrpms.net/> 2.0b-5
 - Bump release.
 
