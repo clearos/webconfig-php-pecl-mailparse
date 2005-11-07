@@ -1,15 +1,15 @@
-%define php_extdir %(php-config --extension-dir || echo %{_libdir}/php4)
+%define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
 
 Summary: PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
-Version: 2.1
-Release: 2
-
+Version: 2.1.1
+Release: 1%{?dist}
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
 Source0: http://pecl.php.net/get/mailparse-%{version}.tgz
-Source1: mbfl-4.3.8.tar.gz
+# Tarball created from the ext/mbstring/libmbfl/mbfl/ dir of the PHP sources
+Source1: mbfl-4.4.0.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: php
 BuildRequires: php, php-devel
@@ -39,7 +39,7 @@ phpize
 
 # Drop in the bit of configuration
 %{__mkdir_p} %{buildroot}%{_sysconfdir}/php.d
-%{__cat} > %{buildroot}%{_sysconfdir}/php.d/mailparse.ini << 'EOF'
+%{__cat} > %{buildroot}%{_sysconfdir}/php.d/z-mailparse.ini << 'EOF'
 ; Enable mailparse extension module
 extension=mailparse.so
 
@@ -55,11 +55,16 @@ EOF
 %files
 %defattr(-, root, root, 0755)
 %doc README try.php
-%config(noreplace) %{_sysconfdir}/php.d/mailparse.ini
+%config(noreplace) %{_sysconfdir}/php.d/z-mailparse.ini
 %{php_extdir}/mailparse.so
 
 
 %changelog
+* Wed Jul 20 2005 Matthias Saou <http://freshrpms.net/> 2.1.1-1
+- Update to 2.1.1.
+- Update mbfl tarball to 4.4.0 PHP sources.
+- Rename .ini file to "z-<name>" to have it load after mbstring.so.
+
 * Fri Apr  7 2005 Michael Schwendt <mschwendt[AT]users.sf.net>
 - rebuilt
 
