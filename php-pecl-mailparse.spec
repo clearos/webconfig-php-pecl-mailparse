@@ -3,7 +3,7 @@
 Summary: PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
 Version: 2.1.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
@@ -11,10 +11,10 @@ Source0: http://pecl.php.net/get/mailparse-%{version}.tgz
 # Tarball created from the ext/mbstring/libmbfl/mbfl/ dir of the PHP sources
 Source1: mbfl-4.4.0.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: php
+Requires: php, php-mbstring
 BuildRequires: php, php-devel
 # Required by phpize
-BuildRequires: autoconf, automake, libtool, gcc-c++
+BuildRequires: autoconf, automake, libtool
 
 %description
 Mailparse is an extension for parsing and working with email messages.
@@ -60,6 +60,9 @@ EOF
 
 
 %changelog
+* Mon Mar  6 2006 Matthias Saou <http://freshrpms.net/> 2.1.1-4
+- Add missing php-mbstring requirement (#197410).
+
 * Mon Mar  6 2006 Matthias Saou <http://freshrpms.net/> 2.1.1-3
 - FC5 rebuild.
 
