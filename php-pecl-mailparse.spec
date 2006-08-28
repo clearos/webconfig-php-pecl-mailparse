@@ -1,9 +1,10 @@
-%define php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php4)
+%define php_extdir %(php-config --extension-dir 2>/dev/null || echo "undefined")
+%define php_apiver %((echo 0; php -i 2>/dev/null | sed -n 's/^PHP API => //p') | tail -1)
 
 Summary: PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
 Version: 2.1.1
-Release: 4%{?dist}
+Release: 5%{?dist}
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
@@ -11,7 +12,8 @@ Source0: http://pecl.php.net/get/mailparse-%{version}.tgz
 # Tarball created from the ext/mbstring/libmbfl/mbfl/ dir of the PHP sources
 Source1: mbfl-4.4.0.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: php, php-mbstring
+Requires: php-api = %{php_apiver}, php-mbstring
+Provides: php-pecl(mailparse)
 BuildRequires: php, php-devel
 # Required by phpize
 BuildRequires: autoconf, automake, libtool
@@ -22,7 +24,7 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 
 
 %prep
-%setup -a 1 -n mailparse-%{version}
+%setup -n mailparse-%{version} -a 1
 
 
 %build
@@ -60,6 +62,10 @@ EOF
 
 
 %changelog
+* Mon Aug 28 2006 Matthias Saou <http://freshrpms.net/> 2.1.1-5
+- FC6 rebuild.
+- Add php-api requirement and php-pecl(mailparse) provides.
+
 * Mon Mar  6 2006 Matthias Saou <http://freshrpms.net/> 2.1.1-4
 - Add missing php-mbstring requirement (#197410).
 
