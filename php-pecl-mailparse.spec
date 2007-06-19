@@ -1,19 +1,18 @@
-%define php_extdir %(php-config --extension-dir 2>/dev/null || echo "undefined")
-%define php_apiver %((echo 0; php -i 2>/dev/null | sed -n 's/^PHP API => //p') | tail -1)
+%global php_extdir  %(php-config --extension-dir 2>/dev/null || echo "failed")
 
-Summary: PECL package for parsing and working with email messages
+Summary: PHP PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
 Version: 2.1.1
-Release: 5%{?dist}
-License: PHP
+Release: 6%{?dist}
+License: The PHP License
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
 Source0: http://pecl.php.net/get/mailparse-%{version}.tgz
-# Tarball created from the ext/mbstring/libmbfl/mbfl/ dir of the PHP sources
-Source1: mbfl-4.4.0.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: php-api = %{php_apiver}, php-mbstring
-Provides: php-pecl(mailparse)
+Requires: php-mbstring
+Requires: php(zend-abi) = %{php_zend_api}
+Requires: php(api) = %{php_core_api}
+Provides: php-pecl(mailparse) = %{version}-%{release}
 BuildRequires: php, php-devel
 # Required by phpize
 BuildRequires: autoconf, automake, libtool
@@ -24,12 +23,14 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 
 
 %prep
-%setup -n mailparse-%{version} -a 1
+# We need to create our working directory since the package*.xml files from
+# the sources extract straight to it
+%setup -q -c
+# Move back all other sources to the top level working directory
+%{__mv} mailparse-%{version}/* .
 
 
 %build
-%{__mkdir_p} ext/mbstring/libmbfl/
-%{__mv} mbfl-* ext/mbstring/libmbfl/mbfl
 phpize
 %configure
 %{__make} %{?_smp_mflags}
@@ -43,7 +44,7 @@ phpize
 %{__mkdir_p} %{buildroot}%{_sysconfdir}/php.d
 %{__cat} > %{buildroot}%{_sysconfdir}/php.d/z-mailparse.ini << 'EOF'
 ; Enable mailparse extension module
-extension=mailparse.so
+extension = mailparse.so
 
 ; Set the default charset
 ;mailparse.def_charset = us-ascii
@@ -55,13 +56,19 @@ EOF
 
 
 %files
-%defattr(-, root, root, 0755)
+%defattr(-,root,root,-)
 %doc README try.php
+# We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{_sysconfdir}/php.d/z-mailparse.ini
 %{php_extdir}/mailparse.so
 
 
 %changelog
+* Tue Jun 19 2007 Matthias Saou <http://freshrpms.net/> 2.1.1-6
+- Fix package requirements by adding build-time zend-abi version.
+- Clean up spec to conform to current PHP packaging rules.
+- No longer bundle part of mbstring (mbfl), at last! (makes spec F7+ specific)
+
 * Mon Aug 28 2006 Matthias Saou <http://freshrpms.net/> 2.1.1-5
 - FC6 rebuild.
 - Add php-api requirement and php-pecl(mailparse) provides.
