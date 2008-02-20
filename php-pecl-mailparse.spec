@@ -3,7 +3,7 @@
 Summary: PHP PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
 Version: 2.1.1
-Release: 8
+Release: 9
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
@@ -64,6 +64,9 @@ EOF
 
 
 %changelog
+* Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 2.1.1-9
+- Autorebuild for GCC 4.3
+
 * Wed Aug 22 2007 Matthias Saou <http://freshrpms.net/> 2.1.1-8
 - Rebuild for new BuildID feature.
 
