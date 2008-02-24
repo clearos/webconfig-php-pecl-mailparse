@@ -1,9 +1,12 @@
-%global php_extdir  %(php-config --extension-dir 2>/dev/null || echo "failed")
+%{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
+%{!?php_extdir: %{expand: %%global php_extdir %(php-config --extension-dir)}}
+
+%define pecl_name mailparse
 
 Summary: PHP PECL package for parsing and working with email messages
 Name: php-pecl-mailparse
-Version: 2.1.1
-Release: 9
+Version: 2.1.3
+Release: 1
 License: PHP
 Group: Development/Languages
 URL: http://pecl.php.net/package/mailparse
@@ -12,8 +15,12 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: php-mbstring
 Requires: php(zend-abi) = %{php_zend_api}
 Requires: php(api) = %{php_core_api}
-Provides: php-pecl(mailparse) = %{version}-%{release}
-BuildRequires: php, php-devel
+Requires(post): %{__pecl}
+Requires(postun): %{__pecl}
+Provides: php-pecl(%{pecl_name}) = %{version}-%{release}
+BuildRequires: php-devel, php-pear
+# mbstring need for tests
+BuildRequires: php-mbstring
 # Required by phpize
 BuildRequires: autoconf, automake, libtool
 
@@ -26,6 +33,10 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 # We need to create our working directory since the package*.xml files from
 # the sources extract straight to it
 %setup -q -c
+
+# Convert to version 2.0
+%{__pear} convert package.xml package2.xml
+
 # Move back all other sources to the top level working directory
 %{__mv} mailparse-%{version}/* .
 
@@ -50,9 +61,36 @@ extension = mailparse.so
 ;mailparse.def_charset = us-ascii
 EOF
 
+# Install XML package description
+# use 'name' rather than 'pecl_name' to avoid conflict with pear extensions
+%{__mkdir_p} %{buildroot}%{pecl_xmldir}
+%{__install} -m 644 package2.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
+
+
+%check
+cp %{php_extdir}/mbstring.so modules
+TEST_PHP_EXECUTABLE=$(which php) php run-tests.php \
+    -n -q -d extension_dir=modules \
+    -d extension=mbstring.so \
+    -d extension=%{pecl_name}.so \
+
 
 %clean
 %{__rm} -rf %{buildroot}
+
+
+%if 0%{?pecl_install:1}
+%post
+%{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
+%endif
+
+
+%if 0%{?pecl_uninstall:1}
+%postun
+if [ $1 -eq 0 ] ; then
+    %{pecl_uninstall} %{pecl_name} >/dev/null || :
+fi
+%endif
 
 
 %files
@@ -61,9 +99,15 @@ EOF
 # We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{_sysconfdir}/php.d/z-mailparse.ini
 %{php_extdir}/mailparse.so
+%{pecl_xmldir}/%{name}.xml
 
 
 %changelog
+* Sun Feb 24 2008  Remi Collet <Fedora@FamilleCollet.com> 2.1.3-1
+- update to 2.1.3
+- add post(un) scriplet
+- add check
+
 * Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 2.1.1-9
 - Autorebuild for GCC 4.3
 
