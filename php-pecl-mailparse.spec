@@ -34,9 +34,6 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 # the sources extract straight to it
 %setup -q -c
 
-# Convert to version 2.0
-%{__pear} convert package.xml package2.xml
-
 # Move back all other sources to the top level working directory
 %{__mv} mailparse-%{version}/* .
 
@@ -105,6 +102,7 @@ fi
 %changelog
 * Mon Apr 14 2008  Remi Collet <Fedora@FamilleCollet.com> 2.1.4-1
 - update to 2.1.4 (bugfix)
+- package2.xml is now provided
 
 * Sun Feb 24 2008  Remi Collet <Fedora@FamilleCollet.com> 2.1.3-1
 - update to 2.1.3
