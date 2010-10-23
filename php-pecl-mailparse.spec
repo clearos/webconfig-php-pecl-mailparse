@@ -1,28 +1,37 @@
 %{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
 %{!?php_extdir: %{expand: %%global php_extdir %(php-config --extension-dir)}}
 
-%define pecl_name mailparse
+%global pecl_name mailparse
 
-Summary: PHP PECL package for parsing and working with email messages
-Name: php-pecl-mailparse
-Version: 2.1.5
-Release: 2%{?dist}
-License: PHP
-Group: Development/Languages
-URL: http://pecl.php.net/package/mailparse
-Source0: http://pecl.php.net/get/mailparse-%{version}.tgz
+Summary:   PHP PECL package for parsing and working with email messages
+Name:      php-pecl-mailparse
+Version:   2.1.5
+Release:   3%{?dist}
+License:   PHP
+Group:     Development/Languages
+URL:       http://pecl.php.net/package/mailparse
+Source0:   http://pecl.php.net/get/mailparse-%{version}.tgz
+
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRequires: php-devel, php-pear
+# mbstring need for tests
+BuildRequires: php-mbstring
+# Required by phpize
+BuildRequires: autoconf, automake, libtool
+
 Requires: php-mbstring
 Requires: php(zend-abi) = %{php_zend_api}
 Requires: php(api) = %{php_core_api}
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
 Provides: php-pecl(%{pecl_name}) = %{version}-%{release}
-BuildRequires: php-devel, php-pear
-# mbstring need for tests
-BuildRequires: php-mbstring
-# Required by phpize
-BuildRequires: autoconf, automake, libtool
+
+
+%{?filter_setup:
+%filter_provides_in %{php_extdir}/.*\.so$
+%filter_setup
+}
+
 
 %description
 Mailparse is an extension for parsing and working with email messages.
@@ -36,6 +45,7 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 
 # Move back all other sources to the top level working directory
 %{__mv} mailparse-%{version}/* .
+%{__chmod} -x *.php *.c *.h
 
 
 %build
@@ -65,7 +75,7 @@ EOF
 
 
 %check
-cp %{php_extdir}/mbstring.so modules
+%{__ln_s} %{php_extdir}/mbstring.so modules
 TEST_PHP_EXECUTABLE=$(which php) php run-tests.php \
     -n -q -d extension_dir=modules \
     -d extension=mbstring.so \
@@ -92,7 +102,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%doc README try.php
+%doc README CREDITS try.php
 # We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{_sysconfdir}/php.d/z-mailparse.ini
 %{php_extdir}/mailparse.so
@@ -100,6 +110,10 @@ fi
 
 
 %changelog
+* Sat Oct 23 2010  Remi Collet <Fedora@FamilleCollet.com> 2.1.5-3
+- add filter_provides to avoid private-shared-object-provides mailparse.so
+- spec cleanup
+
 * Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 
