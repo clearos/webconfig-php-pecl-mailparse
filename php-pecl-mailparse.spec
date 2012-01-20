@@ -6,11 +6,14 @@
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      php-pecl-mailparse
 Version:   2.1.5
-Release:   5%{?dist}
+Release:   6%{?dist}
 License:   PHP
 Group:     Development/Languages
 URL:       http://pecl.php.net/package/mailparse
 Source0:   http://pecl.php.net/get/mailparse-%{version}.tgz
+
+# https://bugs.php.net/60331
+Patch0:    mailparse-php54.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: php-devel, php-pear
@@ -27,10 +30,11 @@ Requires(postun): %{__pecl}
 Provides: php-pecl(%{pecl_name}) = %{version}-%{release}
 
 
-%{?filter_setup:
-%filter_provides_in %{php_extdir}/.*\.so$
-%filter_setup
-}
+# RPM 4.8
+%{?filter_provides_in: %filter_provides_in %{php_extdir}/.*\.so$}
+%{?filter_setup}
+# RPM 4.9
+%global __provides_exclude_from %{?__provides_exclude_from:%__provides_exclude_from|}%{php_extdir}/.*\\.so$
 
 
 %description
@@ -43,24 +47,13 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 # the sources extract straight to it
 %setup -q -c
 
-# Move back all other sources to the top level working directory
-%{__mv} mailparse-%{version}/* .
-%{__chmod} -x *.php *.c *.h
+extver=$(sed -n '/#define PHP_MAILPARSE_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_mailparse.h)
+if test "x${extver}" != "x%{version}"; then
+   : Error: Upstream version is ${extver}, expecting %{version}.
+   exit 1
+fi
 
-
-%build
-phpize
-%configure
-%{__make} %{?_smp_mflags}
-
-
-%install
-%{__rm} -rf %{buildroot}
-%{__make} install INSTALL_ROOT=%{buildroot}
-
-# Drop in the bit of configuration
-%{__mkdir_p} %{buildroot}%{_sysconfdir}/php.d
-%{__cat} > %{buildroot}%{_sysconfdir}/php.d/z-mailparse.ini << 'EOF'
+cat > %{pecl_name}.ini << 'EOF'
 ; Enable mailparse extension module
 extension = mailparse.so
 
@@ -68,14 +61,34 @@ extension = mailparse.so
 ;mailparse.def_charset = us-ascii
 EOF
 
+%patch0 -p0 -b .php54
+
+chmod -x %{pecl_name}-%{version}/*.{php,c,h}
+
+
+%build
+cd %{pecl_name}-%{version}
+phpize
+%configure
+make %{?_smp_mflags}
+
+
+%install
+rm -rf %{buildroot}
+make -C %{pecl_name}-%{version} \
+     install INSTALL_ROOT=%{buildroot}
+
 # Install XML package description
-# use 'name' rather than 'pecl_name' to avoid conflict with pear extensions
-%{__mkdir_p} %{buildroot}%{pecl_xmldir}
-%{__install} -m 644 package2.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
+install -Dpm 644 package2.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
+
+# Drop in the bit of configuration
+install -Dpm 644 %{pecl_name}.ini %{buildroot}%{_sysconfdir}/php.d/z-%{pecl_name}.ini
 
 
 %check
-%{__ln_s} %{php_extdir}/mbstring.so modules
+cd %{pecl_name}-%{version}
+ln -s %{php_extdir}/mbstring.so modules
+
 TEST_PHP_EXECUTABLE=$(which php) php run-tests.php \
     -n -q -d extension_dir=modules \
     -d extension=mbstring.so \
@@ -83,7 +96,7 @@ TEST_PHP_EXECUTABLE=$(which php) php run-tests.php \
 
 
 %clean
-%{__rm} -rf %{buildroot}
+rm -rf %{buildroot}
 
 
 %if 0%{?pecl_install:1}
@@ -102,7 +115,7 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%doc README CREDITS try.php
+%doc %{pecl_name}-%{version}/{README,CREDITS,try.php}
 # We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{_sysconfdir}/php.d/z-mailparse.ini
 %{php_extdir}/mailparse.so
@@ -110,6 +123,10 @@ fi
 
 
 %changelog
+* Thu Jan 19 2012 Remi Collet <remi@fedoraproject.org> - 2.1.5-6
+- rebuild against PHP 5.4, with patch
+- fix filters
+
 * Sat Jan 14 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1.5-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
 
