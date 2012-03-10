@@ -1,19 +1,16 @@
 %{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
-%{!?php_extdir: %{expand: %%global php_extdir %(php-config --extension-dir)}}
 
 %global pecl_name mailparse
 
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      php-pecl-mailparse
-Version:   2.1.5
-Release:   6%{?dist}
+Version:   2.1.6
+Release:   1%{?dist}
 License:   PHP
 Group:     Development/Languages
 URL:       http://pecl.php.net/package/mailparse
 Source0:   http://pecl.php.net/get/mailparse-%{version}.tgz
 
-# https://bugs.php.net/60331
-Patch0:    mailparse-php54.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: php-devel, php-pear
@@ -31,10 +28,10 @@ Provides: php-pecl(%{pecl_name}) = %{version}-%{release}
 
 
 # RPM 4.8
-%{?filter_provides_in: %filter_provides_in %{php_extdir}/.*\.so$}
+%{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
 # RPM 4.9
-%global __provides_exclude_from %{?__provides_exclude_from:%__provides_exclude_from|}%{php_extdir}/.*\\.so$
+%global __provides_exclude_from %{?__provides_exclude_from:%__provides_exclude_from|}%{_libdir}/.*\\.so$
 
 
 %description
@@ -61,38 +58,67 @@ extension = mailparse.so
 ;mailparse.def_charset = us-ascii
 EOF
 
-%patch0 -p0 -b .php54
-
 chmod -x %{pecl_name}-%{version}/*.{php,c,h}
+
+%if 0%{?__ztsphp:1}
+cp -pr %{pecl_name}-%{version} %{pecl_name}-%{version}-zts
+%endif
 
 
 %build
 cd %{pecl_name}-%{version}
 phpize
-%configure
+%configure --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
+
+%if 0%{?__ztsphp:1}
+cd ../%{pecl_name}-%{version}-zts
+zts-phpize
+%configure --with-php-config=%{_bindir}/zts-php-config
+make %{?_smp_mflags}
+%endif
 
 
 %install
 rm -rf %{buildroot}
 make -C %{pecl_name}-%{version} \
      install INSTALL_ROOT=%{buildroot}
-
-# Install XML package description
-install -Dpm 644 package2.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
-
 # Drop in the bit of configuration
 install -Dpm 644 %{pecl_name}.ini %{buildroot}%{_sysconfdir}/php.d/z-%{pecl_name}.ini
+
+%if 0%{?__ztsphp:1}
+make -C %{pecl_name}-%{version}-zts \
+     install INSTALL_ROOT=%{buildroot}
+# Drop in the bit of configuration
+install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/z-%{pecl_name}.ini
+%endif
+
+# Install XML package description
+install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
 
 %check
 cd %{pecl_name}-%{version}
 ln -s %{php_extdir}/mbstring.so modules
 
-TEST_PHP_EXECUTABLE=$(which php) php run-tests.php \
+TEST_PHP_EXECUTABLE=$(which php) \
+NO_INTERACTION=1 \
+php run-tests.php \
     -n -q -d extension_dir=modules \
     -d extension=mbstring.so \
     -d extension=%{pecl_name}.so \
+
+%if 0%{?__ztsphp:1}
+cd ../%{pecl_name}-%{version}-zts
+ln -s %{php_ztsextdir}/mbstring.so modules
+
+TEST_PHP_EXECUTABLE=%{__ztsphp} \
+NO_INTERACTION=1 \
+php run-tests.php \
+    -n -q -d extension_dir=modules \
+    -d extension=mbstring.so \
+    -d extension=%{pecl_name}.so \
+%endif
 
 
 %clean
@@ -121,8 +147,16 @@ fi
 %{php_extdir}/mailparse.so
 %{pecl_xmldir}/%{name}.xml
 
+%if 0%{?__ztsphp:1}
+%config(noreplace) %{php_ztsinidir}/z-mailparse.ini
+%{php_ztsextdir}/mailparse.so
+%endif
 
 %changelog
+* Sat Mar 10 2012 Remi Collet <remi@fedoraproject.org> - 2.1.6-1
+- update to 2.1.6
+- enable ZTS build
+
 * Thu Jan 19 2012 Remi Collet <remi@fedoraproject.org> - 2.1.5-6
 - rebuild against PHP 5.4, with patch
 - fix filters
