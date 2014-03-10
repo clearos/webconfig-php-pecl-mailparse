@@ -1,6 +1,9 @@
-%{!?__pecl:     %{expand: %%global __pecl     %{_bindir}/pecl}}
+%{!?php_inidir:  %global php_inidir   %{_sysconfdir}/php.d}
+%{!?__pecl:      %global __pecl       %{_bindir}/pecl}
+%{!?__php:       %global __php        %{_bindir}/php}
 
 %global pecl_name mailparse
+%global with_zts  0%{?__ztsphp:1}
 
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      php-pecl-mailparse
@@ -11,27 +14,33 @@ Group:     Development/Languages
 URL:       http://pecl.php.net/package/mailparse
 Source0:   http://pecl.php.net/get/mailparse-%{version}.tgz
 
+# https://bugs.php.net/65861 - Please Provides LICENSE file
+# URL from mailparse.c header
+Source1:   http://www.php.net/license/2_02.txt
 
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 BuildRequires: php-devel, php-pear
 # mbstring need for tests
 BuildRequires: php-mbstring
 # Required by phpize
 BuildRequires: autoconf, automake, libtool
 
-Requires: php-mbstring
+Requires: php-mbstring%{?_isa}
 Requires: php(zend-abi) = %{php_zend_api}
 Requires: php(api) = %{php_core_api}
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
-Provides: php-pecl(%{pecl_name}) = %{version}-%{release}
+
+Provides: php-%{pecl_name} = %{version}
+Provides: php-%{pecl_name}%{?_isa} = %{version}
+Provides: php-pecl(%{pecl_name}) = %{version}
+Provides: php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 
-# RPM 4.8
+%if 0%{?fedora} < 20
+# Filter shared private
 %{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
-# RPM 4.9
-%global __provides_exclude_from %{?__provides_exclude_from:%__provides_exclude_from|}%{_libdir}/.*\\.so$
+%endif
 
 
 %description
@@ -44,11 +53,16 @@ It can deal with rfc822 and rfc2045 (MIME) compliant messages.
 # the sources extract straight to it
 %setup -q -c
 
-extver=$(sed -n '/#define PHP_MAILPARSE_VERSION/{s/.* "//;s/".*$//;p}' %{pecl_name}-%{version}/php_mailparse.h)
+mv %{pecl_name}-%{version} NTS
+
+cd NTS
+cp %{SOURCE1} LICENSE
+extver=$(sed -n '/#define PHP_MAILPARSE_VERSION/{s/.* "//;s/".*$//;p}' php_mailparse.h)
 if test "x${extver}" != "x%{version}"; then
    : Error: Upstream version is ${extver}, expecting %{version}.
    exit 1
 fi
+cd ..
 
 cat > %{pecl_name}.ini << 'EOF'
 ; Enable mailparse extension module
@@ -58,21 +72,21 @@ extension = mailparse.so
 ;mailparse.def_charset = us-ascii
 EOF
 
-chmod -x %{pecl_name}-%{version}/*.{php,c,h}
+chmod -x NTS/*.{php,c,h}
 
-%if 0%{?__ztsphp:1}
-cp -pr %{pecl_name}-%{version} %{pecl_name}-%{version}-zts
+%if %{with_zts}
+cp -pr NTS ZTS
 %endif
 
 
 %build
-cd %{pecl_name}-%{version}
+cd NTS
 phpize
 %configure --with-php-config=%{_bindir}/php-config
 make %{?_smp_mflags}
 
-%if 0%{?__ztsphp:1}
-cd ../%{pecl_name}-%{version}-zts
+%if %{with_zts}
+cd ../ZTS
 zts-phpize
 %configure --with-php-config=%{_bindir}/zts-php-config
 make %{?_smp_mflags}
@@ -80,15 +94,12 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf %{buildroot}
-make -C %{pecl_name}-%{version} \
-     install INSTALL_ROOT=%{buildroot}
+make -C NTS install INSTALL_ROOT=%{buildroot}
 # Drop in the bit of configuration
-install -Dpm 644 %{pecl_name}.ini %{buildroot}%{_sysconfdir}/php.d/z-%{pecl_name}.ini
+install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_inidir}/z-%{pecl_name}.ini
 
-%if 0%{?__ztsphp:1}
-make -C %{pecl_name}-%{version}-zts \
-     install INSTALL_ROOT=%{buildroot}
+%if %{with_zts}
+make -C ZTS install INSTALL_ROOT=%{buildroot}
 # Drop in the bit of configuration
 install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/z-%{pecl_name}.ini
 %endif
@@ -96,63 +107,81 @@ install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/z-%{pecl_name}.in
 # Install XML package description
 install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
 
+# Test & Documentation
+for i in $(grep 'role="test"' package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 NTS/$i %{buildroot}%{pecl_testdir}/%{pecl_name}/$i
+done
+for i in LICENSE $(grep 'role="doc"' package.xml | sed -e 's/^.*name="//;s/".*$//')
+do install -Dpm 644 NTS/$i %{buildroot}%{pecl_docdir}/%{pecl_name}/$i
+done
+
 
 %check
-cd %{pecl_name}-%{version}
-ln -s %{php_extdir}/mbstring.so modules
+: Minimal load test for NTS extension
+%{__php} --no-php-ini \
+    --define extension=mbstring.so \
+    --define extension=%{buildroot}%{php_extdir}/%{pecl_name}.so \
+    --modules | grep %{pecl_name}
 
-TEST_PHP_EXECUTABLE=$(which php) \
+: Upstream test suite for NTS extension
+cd NTS
+TEST_PHP_EXECUTABLE=%{__php} \
 NO_INTERACTION=1 \
-php run-tests.php \
-    -n -q -d extension_dir=modules \
+%{__php} run-tests.php \
+    -n -q \
     -d extension=mbstring.so \
-    -d extension=%{pecl_name}.so \
+    -d extension=$PWD/modules/%{pecl_name}.so
 
-%if 0%{?__ztsphp:1}
-cd ../%{pecl_name}-%{version}-zts
-ln -s %{php_ztsextdir}/mbstring.so modules
+%if %{with_zts}
+: Minimal load test for ZTS extension
+%{__ztsphp} --no-php-ini \
+    --define extension=mbstring.so \
+    --define extension=%{buildroot}%{php_ztsextdir}/%{pecl_name}.so \
+    --modules | grep %{pecl_name}
 
+: Upstream test suite for ZTS extension
+cd ../ZTS
 TEST_PHP_EXECUTABLE=%{__ztsphp} \
 NO_INTERACTION=1 \
 php run-tests.php \
-    -n -q -d extension_dir=modules \
+    -n -q \
     -d extension=mbstring.so \
-    -d extension=%{pecl_name}.so \
+    -d extension=$PWD/modules/%{pecl_name}.so
 %endif
 
 
-%clean
-rm -rf %{buildroot}
-
-
-%if 0%{?pecl_install:1}
 %post
 %{pecl_install} %{pecl_xmldir}/%{name}.xml >/dev/null || :
-%endif
 
 
-%if 0%{?pecl_uninstall:1}
 %postun
 if [ $1 -eq 0 ] ; then
     %{pecl_uninstall} %{pecl_name} >/dev/null || :
 fi
-%endif
 
 
 %files
-%defattr(-,root,root,-)
-%doc %{pecl_name}-%{version}/{README,CREDITS,try.php}
+%doc %{pecl_docdir}/%{pecl_name}
+%doc %{pecl_testdir}/%{pecl_name}
 # We prefix the config file with "z-" so that it loads after mbstring.ini
-%config(noreplace) %{_sysconfdir}/php.d/z-mailparse.ini
-%{php_extdir}/mailparse.so
+%config(noreplace) %{php_inidir}/z-%{pecl_name}.ini
+%{php_extdir}/%{pecl_name}.so
 %{pecl_xmldir}/%{name}.xml
 
-%if 0%{?__ztsphp:1}
-%config(noreplace) %{php_ztsinidir}/z-mailparse.ini
-%{php_ztsextdir}/mailparse.so
+%if %{with_zts}
+%config(noreplace) %{php_ztsinidir}/z-%{pecl_name}.ini
+%{php_ztsextdir}/%{pecl_name}.so
 %endif
 
+
 %changelog
+* Mon Mar 10 2014 Remi Collet <rcollet@redhat.com> - 2.1.6-5
+- cleanups
+- install documentation in pecl_docdir
+- install tests in pecl_testdir
+- add missing License file
+- also provides php-mailparse
+
 * Sun Aug 04 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1.6-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
@@ -231,7 +260,7 @@ fi
 - Update mbfl tarball to 4.4.0 PHP sources.
 - Rename .ini file to "z-<name>" to have it load after mbstring.so.
 
-* Fri Apr  7 2005 Michael Schwendt <mschwendt[AT]users.sf.net>
+* Thu Apr  7 2005 Michael Schwendt <mschwendt[AT]users.sf.net>
 - rebuilt
 
 * Wed Feb 16 2005 Matthias Saou <http://freshrpms.net/> 2.1-1
