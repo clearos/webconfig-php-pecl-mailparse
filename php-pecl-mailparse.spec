@@ -4,6 +4,13 @@
 
 %global pecl_name mailparse
 %global with_zts  0%{?__ztsphp:1}
+%if 0%{?fedora} < 21
+# After mbstring
+%global ini_name  z-%{pecl_name}.ini
+%else
+# After 20-mbstring
+%global ini_name  40-%{pecl_name}.ini
+%endif
 
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      php-pecl-mailparse
@@ -36,7 +43,7 @@ Provides: php-pecl(%{pecl_name}) = %{version}
 Provides: php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 
-%if 0%{?fedora} < 20
+%if 0%{?fedora} < 20 && 0%{?rhel} < 7
 # Filter shared private
 %{?filter_provides_in: %filter_provides_in %{_libdir}/.*\.so$}
 %{?filter_setup}
@@ -64,7 +71,7 @@ if test "x${extver}" != "x%{version}"; then
 fi
 cd ..
 
-cat > %{pecl_name}.ini << 'EOF'
+cat > %{ini_name} << 'EOF'
 ; Enable mailparse extension module
 extension = mailparse.so
 
@@ -96,12 +103,12 @@ make %{?_smp_mflags}
 %install
 make -C NTS install INSTALL_ROOT=%{buildroot}
 # Drop in the bit of configuration
-install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_inidir}/z-%{pecl_name}.ini
+install -Dpm 644 %{ini_name} %{buildroot}%{php_inidir}/%{ini_name}
 
 %if %{with_zts}
 make -C ZTS install INSTALL_ROOT=%{buildroot}
 # Drop in the bit of configuration
-install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/z-%{pecl_name}.ini
+install -Dpm 644 %{ini_name} %{buildroot}%{php_ztsinidir}/%{ini_name}
 %endif
 
 # Install XML package description
@@ -163,18 +170,20 @@ fi
 %files
 %doc %{pecl_docdir}/%{pecl_name}
 %doc %{pecl_testdir}/%{pecl_name}
-# We prefix the config file with "z-" so that it loads after mbstring.ini
-%config(noreplace) %{php_inidir}/z-%{pecl_name}.ini
+%config(noreplace) %{php_inidir}/%{ini_name}
 %{php_extdir}/%{pecl_name}.so
 %{pecl_xmldir}/%{name}.xml
 
 %if %{with_zts}
-%config(noreplace) %{php_ztsinidir}/z-%{pecl_name}.ini
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
 %{php_ztsextdir}/%{pecl_name}.so
 %endif
 
 
 %changelog
+* Thu Apr 24 2014 Remi Collet <rcollet@redhat.com> - 2.1.6-7
+- add numerical prefix to extension configuration file
+
 * Mon Mar 10 2014 Remi Collet <rcollet@redhat.com> - 2.1.6-6
 - cleanups
 - install documentation in pecl_docdir
