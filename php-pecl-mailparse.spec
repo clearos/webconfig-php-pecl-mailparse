@@ -4,7 +4,7 @@
 
 %global pecl_name mailparse
 %global with_zts  0%{?__ztsphp:1}
-%if 0%{?fedora} < 21
+%if "%{php_version}" < "5.6"
 # After mbstring
 %global ini_name  z-%{pecl_name}.ini
 %else
@@ -15,7 +15,7 @@
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      php-pecl-mailparse
 Version:   2.1.6
-Release:   8%{?dist}
+Release:   9%{?dist}
 License:   PHP
 Group:     Development/Languages
 URL:       http://pecl.php.net/package/mailparse
@@ -181,6 +181,9 @@ fi
 
 
 %changelog
+* Thu Jun 19 2014 Remi Collet <rcollet@redhat.com> - 2.1.6-9
+- rebuild for https://fedoraproject.org/wiki/Changes/Php56
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.1.6-8
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
