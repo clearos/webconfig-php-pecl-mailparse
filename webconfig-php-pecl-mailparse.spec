@@ -1,12 +1,13 @@
-%{!?php_inidir:  %global php_inidir   %{_sysconfdir}/php.d}
+%{!?php_inidir:  %global php_inidir   /usr/clearos/sandbox%{_sysconfdir}/php.d}
 %{!?__pecl:      %global __pecl       %{_bindir}/pecl}
-%{!?__php:       %global __php        %{_bindir}/php}
+%{!?__php:       %global __php        /usr/clearos/sandbox%{_bindir}/php}
 
 %global pecl_name mailparse
 %global with_zts  0%{?__ztsphp:1}
+%global php_extdir /usr/clearos/sandbox/%{_libdir}/php/modules
 
 Summary:   PHP PECL package for parsing and working with email messages
-Name:      php-pecl-mailparse
+Name:      webconfig-php-pecl-mailparse
 Version:   2.1.6
 Release:   6%{?dist}
 License:   PHP
@@ -18,22 +19,22 @@ Source0:   http://pecl.php.net/get/mailparse-%{version}.tgz
 # URL from mailparse.c header
 Source1:   http://www.php.net/license/2_02.txt
 
-BuildRequires: php-devel, php-pear
+BuildRequires: webconfig-php-devel, php-pear
 # mbstring need for tests
-BuildRequires: php-mbstring
+BuildRequires: webconfig-php-mbstring
 # Required by phpize
 BuildRequires: autoconf, automake, libtool
 
-Requires: php-mbstring%{?_isa}
-Requires: php(zend-abi) = %{php_zend_api}
-Requires: php(api) = %{php_core_api}
+Requires: webconfig-php-mbstring%{?_isa}
+Requires: webconfig-php(zend-abi) = %{php_zend_api}
+Requires: webconfig-php(api) = %{php_core_api}
 Requires(post): %{__pecl}
 Requires(postun): %{__pecl}
 
-Provides: php-%{pecl_name} = %{version}
-Provides: php-%{pecl_name}%{?_isa} = %{version}
-Provides: php-pecl(%{pecl_name}) = %{version}
-Provides: php-pecl(%{pecl_name})%{?_isa} = %{version}
+Provides: webconfig-php-%{pecl_name} = %{version}
+Provides: webconfig-php-%{pecl_name}%{?_isa} = %{version}
+Provides: webconfig-php-pecl(%{pecl_name}) = %{version}
+Provides: webconfig-php-pecl(%{pecl_name})%{?_isa} = %{version}
 
 
 %if 0%{?fedora} < 20
@@ -82,13 +83,13 @@ cp -pr NTS ZTS
 %build
 cd NTS
 phpize
-%configure --with-php-config=%{_bindir}/php-config
+%configure --with-php-config=/usr/clearos/sandbox/%{_bindir}/php-config
 make %{?_smp_mflags}
 
 %if %{with_zts}
 cd ../ZTS
 zts-phpize
-%configure --with-php-config=%{_bindir}/zts-php-config
+%configure --with-php-config=/usr/clearos/sandbox/%{_bindir}/zts-php-config
 make %{?_smp_mflags}
 %endif
 
@@ -130,7 +131,7 @@ NO_INTERACTION=1 \
 %{__php} run-tests.php \
     -n -q \
     -d extension=mbstring.so \
-    -d extension=$PWD/modules/%{pecl_name}.so
+    -d extension=$PWD%{php_extdir}/%{pecl_name}.so
 
 %if %{with_zts}
 : Minimal load test for ZTS extension
@@ -146,7 +147,7 @@ NO_INTERACTION=1 \
 php run-tests.php \
     -n -q \
     -d extension=mbstring.so \
-    -d extension=$PWD/modules/%{pecl_name}.so
+    -d extension=$PWD%{php_extdir}/%{pecl_name}.so
 %endif
 
 
