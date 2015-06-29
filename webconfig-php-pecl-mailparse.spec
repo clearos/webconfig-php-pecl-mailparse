@@ -1,10 +1,10 @@
 %{!?php_inidir:  %global php_inidir   /usr/clearos/sandbox%{_sysconfdir}/php.d}
+%{!?php_extdir:  %global php_extdir   /usr/clearos/sandbox%{_libdir}/php/modules}
 %{!?__pecl:      %global __pecl       %{_bindir}/pecl}
 %{!?__php:       %global __php        /usr/clearos/sandbox%{_bindir}/php}
 
 %global pecl_name mailparse
 %global with_zts  0%{?__ztsphp:1}
-%global php_extdir /usr/clearos/sandbox%{_libdir}/php/modules
 
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      webconfig-php-pecl-mailparse
@@ -82,13 +82,13 @@ cp -pr NTS ZTS
 
 %build
 cd NTS
-/usr/clearos/sandbox%{_bindir}/phpize
+%{__php}ize
 %configure --with-php-config=/usr/clearos/sandbox%{_bindir}/php-config
 make %{?_smp_mflags}
 
 %if %{with_zts}
 cd ../ZTS
-/usr/clearos/sandbox%{_bindir}/zts-phpize
+%{__ztsphp}ize
 %configure --with-php-config=/usr/clearos/sandbox%{_bindir}/zts-php-config
 make %{?_smp_mflags}
 %endif
@@ -162,12 +162,9 @@ fi
 
 
 %files
-%doc %{pecl_docdir}/%{pecl_name}
-%doc %{pecl_testdir}/%{pecl_name}
 # We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{php_inidir}/z-%{pecl_name}.ini
 %{php_extdir}/%{pecl_name}.so
-%{pecl_xmldir}/%{name}.xml
 
 %if %{with_zts}
 %config(noreplace) %{php_ztsinidir}/z-%{pecl_name}.ini
