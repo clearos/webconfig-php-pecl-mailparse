@@ -157,6 +157,8 @@ fi
 # We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{php_inidir}/z-%{pecl_name}.ini
 %{php_extdir}/%{pecl_name}.so
+%{pecl_xmldir}/%{name}.xml
+
 
 %if %{with_zts}
 %config(noreplace) %{php_ztsinidir}/z-%{pecl_name}.ini
