@@ -82,13 +82,13 @@ cp -pr NTS ZTS
 
 %build
 cd NTS
-phpize
+/usr/clearos/sandbox/%{_bindir}/phpize
 %configure --with-php-config=/usr/clearos/sandbox/%{_bindir}/php-config
 make %{?_smp_mflags}
 
 %if %{with_zts}
 cd ../ZTS
-zts-phpize
+/usr/clearos/sandbox/%{_bindir}/zts-phpize
 %configure --with-php-config=/usr/clearos/sandbox/%{_bindir}/zts-php-config
 make %{?_smp_mflags}
 %endif
