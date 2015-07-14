@@ -9,7 +9,7 @@
 Summary:   PHP PECL package for parsing and working with email messages
 Name:      webconfig-php-pecl-mailparse
 Version:   2.1.6
-Release:   6%{?dist}
+Release:   6%{?dist}.1
 License:   PHP
 Group:     Development/Languages
 URL:       http://pecl.php.net/package/mailparse
@@ -105,9 +105,6 @@ make -C ZTS install INSTALL_ROOT=%{buildroot}
 install -Dpm 644 %{pecl_name}.ini %{buildroot}%{php_ztsinidir}/z-%{pecl_name}.ini
 %endif
 
-# Install XML package description
-install -Dpm 644 package.xml %{buildroot}%{pecl_xmldir}/%{name}.xml
-
 
 %check
 : Minimal load test for NTS extension
@@ -157,7 +154,6 @@ fi
 # We prefix the config file with "z-" so that it loads after mbstring.ini
 %config(noreplace) %{php_inidir}/z-%{pecl_name}.ini
 %{php_extdir}/%{pecl_name}.so
-%{pecl_xmldir}/%{name}.xml
 
 
 %if %{with_zts}
@@ -167,6 +163,9 @@ fi
 
 
 %changelog
+* Tue Jul 14 2015 ClearFoundation <developer@clearfoundation.com> - 2.1.6-6.clear.1
+- Customized for ClearOS
+
 * Mon Mar 10 2014 Remi Collet <rcollet@redhat.com> - 2.1.6-6
 - cleanups
 - install documentation in pecl_docdir
