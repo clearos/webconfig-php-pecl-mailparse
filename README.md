@@ -2,9 +2,6 @@
 
 Forked version of webconfig-php-pecl-mailparse with ClearOS changes applied
 
-## Update usage
-  Add __#kojibuild__ to commit message to automatically build
-
 * git clone git+ssh://git@github.com/clearos/webconfig-php-pecl-mailparse.git
 * cd webconfig-php-pecl-mailparse
 * git checkout epel7
